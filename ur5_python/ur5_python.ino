@@ -16,8 +16,8 @@ int directionMultiplier = 1, next_dir = 1; // = 1: positive direction, = -1: neg
 bool newData, runallowed = false; // booleans for new data from serial, and runallowed flag
 AccelStepper stepper(1, 8, 9);// direction Digital 9 (CCW), pulses Digital 8 (CLK)
 long motor_steps = 0; //Number of step
-int motor_speed = 1000;
-int motor_acc = 100;
+int motor_speed = 400;
+int motor_acc = 50;
 long receivedAcceleration = 0; //Steps / second^2
 char receivedCommand;
 // ---------------------------------------------------------------------------
@@ -33,9 +33,9 @@ int limit_count = 1, lc = 0;
 
 
 bool homing = false, move_7thaxis = false;
-
+float linear_position = 0.0;
 void Homing()
-{ Serial.println("Homing");
+{ 
   while (true)
   { motor_steps = 2000;
 
@@ -59,27 +59,27 @@ void Homing()
       int i = 0;
 
       UpdateHome();
-      while(i<2000)
-      {motor_steps =2000;
-      directionMultiplier = 1;
-      i++;
-      RotateAbsolute();} 
+      while (i < 2000)
+      { motor_steps = 2000;
+        directionMultiplier = 1;
+        i++;
+        RotateAbsolute();
+      }
       delay(100);
       UpdateHome();
+      linear_position = stepper.currentPosition();
       delay(100);
       homing = false;
-      Serial.println("still in home");
       break;
     }
   }
-  Serial.println("done with home");
 }
 
 
 void RunTheMotor() //function for the motor
 {
   if (runallowed == true)
-  { 
+  {
     stepper.enableOutputs(); //enable pins
     stepper.run(); //step the motor (this will step the motor by 1 step at each loop)
   }
@@ -133,7 +133,7 @@ void RotateRelative()
 }
 
 void RotateAbsolute()
-{ Serial.println("starting to move");
+{
   if (directionMultiplier == 1)
   {
     limit_switch = digitalRead(limit_switch_pinA);
@@ -203,7 +203,7 @@ void limitStopB()
 
 
 
-float linear_position = 0.0;
+
 
 void setup()
 {
@@ -227,6 +227,10 @@ void setup()
   pinMode(11, OUTPUT);
   digitalWrite(13, HIGH);
   digitalWrite(11, HIGH);
+  pinMode(12, OUTPUT);
+  pinMode(10, OUTPUT);
+  digitalWrite(12, HIGH);
+  digitalWrite(10, HIGH);
 
 }
 
@@ -235,7 +239,6 @@ void loop()
 
 { while (!Serial.available());
   RecievedComand = Serial.readString();
-
   if (RecievedComand == home_)
   {
     directionMultiplier = -1;
@@ -248,7 +251,7 @@ void loop()
     leader_dist = val.toInt();
     motor_steps = ConvertDistToStep(leader_dist);
     while (linear_position < motor_steps )
-    { Serial.println("ready to move");
+    {
       directionMultiplier = 1;
       RotateAbsolute();
       linear_position = stepper.currentPosition();
